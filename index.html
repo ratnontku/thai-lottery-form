@@ -67,6 +67,14 @@
     .gap-after-2 {
       margin-right: 6px !important;
     }
+    .delete-btn {
+      font-size: 12px;
+      margin-left: 4px;
+      cursor: pointer;
+      color: red;
+      background: none;
+      border: none;
+    }
     .footer {
       font-size: 16px;
       margin-top: 4px;
@@ -146,6 +154,7 @@ const lotteryOptions = ["รัฐบาล", "การกุศล"];
 let currentTableIndex = 0;
 let tableRowsFilled = [0, 0, 0, 0];
 let html5QrCodeInstance = null;
+let ticketSet = new Set();
 
 function setActiveTable(index) {
   currentTableIndex = parseInt(index);
@@ -155,17 +164,45 @@ function setActiveTable(index) {
 }
 
 function fillTableFromParts(cc, dddddd) {
+  const ticketCode = `${cc}-${dddddd}`;
+  if (ticketSet.has(ticketCode)) {
+    alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
+    return;
+  }
+
   const row = tableRowsFilled[currentTableIndex];
   if (row >= 20) {
     alert("ตารางนี้ครบแล้ว");
     return;
   }
+
+  const cells = [];
   for (let i = 0; i < 2; i++) {
-    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
+    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
+    cell.textContent = cc[i] || '';
+    cells.push(cell);
   }
   for (let i = 0; i < 6; i++) {
-    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
+    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`);
+    cell.textContent = dddddd[i] || '';
+    cells.push(cell);
   }
+
+  // Add delete button
+  const rowEl = cells[0].parentElement;
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = "❌";
+  deleteBtn.className = "delete-btn";
+  deleteBtn.onclick = () => {
+    cells.forEach(cell => cell.textContent = '');
+    rowEl.removeChild(deleteBtn);
+    ticketSet.delete(ticketCode);
+    tableRowsFilled[currentTableIndex]--;
+    updateFooter(currentTableIndex);
+  };
+  rowEl.appendChild(deleteBtn);
+
+  ticketSet.add(ticketCode);
   tableRowsFilled[currentTableIndex]++;
   updateFooter(currentTableIndex);
 }
@@ -185,9 +222,9 @@ function manualInputQR() {
   }
 
   fillTableFromParts(cc, dddddd);
-
   document.getElementById("manualSet").value = "";
   document.getElementById("manualNumber").value = "";
+  document.getElementById("manualSet").focus();
 }
 
 function startQRScanner() {
@@ -314,6 +351,18 @@ document.addEventListener('DOMContentLoaded', () => {
   createTables();
   document.getElementById('ownerName').addEventListener('input', () => {
     for (let i = 0; i < 4; i++) updateFooter(i);
+  });
+
+  // Enable Enter key for manual input
+  document.getElementById("manualNumber").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      manualInputQR();
+    }
+  });
+  document.getElementById("manualSet").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      document.getElementById("manualNumber").focus();
+    }
   });
 });
 </script>
