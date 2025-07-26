@@ -39,7 +39,7 @@
     }
     .tables {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 20px;
     }
@@ -47,7 +47,7 @@
       background: white;
       border: 2px solid #ccc;
       padding: 10px;
-      border-radius: 8px;
+      border-radius: 1px;
     }
     .lottery-grid {
       display: grid;
@@ -138,6 +138,7 @@
       <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" style="width:80px;" />
       <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" style="width:120px;" />
       <button onclick="manualInputQR()">เพิ่ม</button>
+      <button onclick="undoLastEntry()">ย้อนกลับ</button>
     </div>
   </div>
 
@@ -147,229 +148,227 @@
     <button onclick="window.print()">พิมพ์</button>
   </div>
 
-<script>
-const prizeOptions = [
-  "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
-  "รางวัลที่ 5", "หน้า 3 ตัว", "ท้าย 3 ตัว", "ท้าย 2 ตัว",
-  "หน้า 3 ตัว+ท้าย 3 ตัว", "หน้า 3 ตัว+ท้าย 2 ตัว", "ท้าย 3 ตัว+ท้าย 2 ตัว"
-];
-const lotteryOptions = ["รัฐบาล", "การกุศล"];
+  <script>
+  const prizeOptions = [
+    "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
+    "รางวัลที่ 5", "หน้า 3 ตัว", "ท้าย 3 ตัว", "ท้าย 2 ตัว",
+    "หน้า 3 ตัว+ท้าย 3 ตัว", "หน้า 3 ตัว+ท้าย 2 ตัว", "ท้าย 3 ตัว+ท้าย 2 ตัว"
+  ];
+  const lotteryOptions = ["รัฐบาล", "การกุศล"];
 
-let currentTableIndex = 0;
-let tableRowsFilled = [0, 0, 0, 0];
-let html5QrCodeInstance = null;
-let ticketSet = new Set();
+  let currentTableIndex = 0;
+  let tableRowsFilled = [0, 0, 0, 0];
+  let html5QrCodeInstance = null;
+  let ticketSet = new Set();
+  let entryHistory = [];
 
-function setActiveTable(index) {
-  currentTableIndex = parseInt(index);
-  document.querySelectorAll('.table-wrapper').forEach((el, i) => {
-    el.classList.toggle('active-table', i === currentTableIndex);
-  });
-}
-
-function fillTableFromParts(cc, dddddd) {
-  const ticketCode = `${cc}-${dddddd}`;
-  if (ticketSet.has(ticketCode)) {
-    alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
-    return;
+  function setActiveTable(index) {
+    currentTableIndex = parseInt(index);
+    document.querySelectorAll('.table-wrapper').forEach((el, i) => {
+      el.classList.toggle('active-table', i === currentTableIndex);
+    });
   }
 
-  const row = tableRowsFilled[currentTableIndex];
-  if (row >= 20) {
-    alert("ตารางนี้ครบแล้ว");
-    return;
-  }
+  function fillTableFromParts(cc, dddddd) {
+    const ticketCode = `${cc}-${dddddd}`;
+    if (ticketSet.has(ticketCode)) {
+      alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
+      return;
+    }
 
-  const cells = [];
-  for (let i = 0; i < 2; i++) {
-    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
-    cell.textContent = cc[i] || '';
-    cells.push(cell);
-  }
-  for (let i = 0; i < 6; i++) {
-    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`);
-    cell.textContent = dddddd[i] || '';
-    cells.push(cell);
-  }
+    const row = tableRowsFilled[currentTableIndex];
+    if (row >= 20) {
+      alert("ตารางนี้ครบแล้ว");
+      return;
+    }
 
-  // Add delete button
-  const rowEl = cells[0].parentElement;
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = "❌";
-  deleteBtn.className = "delete-btn";
-  deleteBtn.onclick = () => {
-    cells.forEach(cell => cell.textContent = '');
-    rowEl.removeChild(deleteBtn);
-    ticketSet.delete(ticketCode);
-    tableRowsFilled[currentTableIndex]--;
+    const cells = [];
+    for (let i = 0; i < 2; i++) {
+      const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
+      cell.textContent = cc[i] || '';
+      cells.push(cell);
+    }
+    for (let i = 0; i < 6; i++) {
+      const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`);
+      cell.textContent = dddddd[i] || '';
+      cells.push(cell);
+    }
+
+    ticketSet.add(ticketCode);
+    entryHistory.push({ table: currentTableIndex, row, ticketCode, cells });
+    tableRowsFilled[currentTableIndex]++;
     updateFooter(currentTableIndex);
-  };
-  rowEl.appendChild(deleteBtn);
-
-  ticketSet.add(ticketCode);
-  tableRowsFilled[currentTableIndex]++;
-  updateFooter(currentTableIndex);
-}
-
-function manualInputQR() {
-  const cc = document.getElementById("manualSet").value.trim();
-  const dddddd = document.getElementById("manualNumber").value.trim();
-
-  if (!/^\d{2}$/.test(cc)) {
-    alert("กรุณากรอกชุดที่ให้ถูกต้อง (2 หลัก)");
-    return;
   }
 
-  if (!/^\d{6}$/.test(dddddd)) {
-    alert("กรุณากรอกเลขสลากให้ถูกต้อง (6 หลัก)");
-    return;
-  }
+  function manualInputQR() {
+    const cc = document.getElementById("manualSet").value.trim();
+    const dddddd = document.getElementById("manualNumber").value.trim();
 
-  fillTableFromParts(cc, dddddd);
-  document.getElementById("manualSet").value = "";
-  document.getElementById("manualNumber").value = "";
-  document.getElementById("manualSet").focus();
-}
-
-function startQRScanner() {
-  const qrDiv = document.getElementById("qr-reader");
-  qrDiv.innerHTML = "";
-  qrDiv.style.display = "block";
-  qrDiv.style.height = "360px";
-
-  if (html5QrCodeInstance) {
-    html5QrCodeInstance.stop().catch(() => {});
-    html5QrCodeInstance.clear().catch(() => {});
-  }
-
-  html5QrCodeInstance = new Html5Qrcode("qr-reader");
-  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-  html5QrCodeInstance.start(
-    { facingMode: "environment" },
-    config,
-    qrMessage => {
-      if (!qrMessage.includes('-')) return;
-      const parts = qrMessage.split('-');
-      if (parts.length !== 5) {
-        alert("QR format invalid");
-        return;
-      }
-      fillTableFromParts(parts[2], parts[3]);
-      html5QrCodeInstance.stop().then(() => {
-        qrDiv.style.display = "none";
-      }).catch(err => {
-        console.error("Failed to stop camera", err);
-      });
-    },
-    err => {
-      // Optional: console.log("Scan error:", err);
+    if (!/^\d{2}$/.test(cc)) {
+      alert("กรุณากรอกชุดที่ให้ถูกต้อง (2 หลัก)");
+      return;
     }
-  ).catch(err => {
-    alert("ไม่สามารถเปิดกล้องได้: " + err);
-  });
-}
 
-function createTables() {
-  const container = document.getElementById('tablesContainer');
-  for (let t = 0; t < 4; t++) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'table-wrapper';
+    if (!/^\d{6}$/.test(dddddd)) {
+      alert("กรุณากรอกเลขสลากให้ถูกต้อง (6 หลัก)");
+      return;
+    }
 
-    const prizeSelect = document.createElement('select');
-    prizeSelect.id = `prize-${t}`;
-    prizeSelect.classList.add('no-print');
-    prizeOptions.forEach(opt => {
-      const o = document.createElement('option');
-      o.value = opt; o.textContent = opt;
-      prizeSelect.appendChild(o);
-    });
+    fillTableFromParts(cc, dddddd);
+    document.getElementById("manualSet").value = "";
+    document.getElementById("manualNumber").value = "";
+    document.getElementById("manualSet").focus();
+  }
 
-    const lotterySelect = document.createElement('select');
-    lotterySelect.id = `lottery-${t}`;
-    lotterySelect.classList.add('no-print');
-    lotteryOptions.forEach(opt => {
-      const o = document.createElement('option');
-      o.value = opt; o.textContent = opt;
-      lotterySelect.appendChild(o);
-    });
+  function undoLastEntry() {
+    const last = entryHistory.pop();
+    if (!last) return alert("ยังไม่มีข้อมูลให้ย้อนกลับ");
 
-    const grid = document.createElement('div');
-    grid.className = 'lottery-grid';
-    for (let col = 0; col < 2; col++) {
-      const column = document.createElement('div');
-      column.className = 'lottery-column';
-      for (let row = 0; row < 10; row++) {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'lottery-row';
-        const index = col * 10 + row;
-        const rowNum = document.createElement('div');
-        rowNum.className = 'row-number';
-        rowNum.textContent = index + 1;
-        rowDiv.appendChild(rowNum);
-        for (let c = 0; c < 8; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'cell';
-          if (c === 1) cell.classList.add('gap-after-2');
-          cell.setAttribute('data-cell', `${t}-${index}-${c}`);
-          rowDiv.appendChild(cell);
+    last.cells.forEach(cell => cell.textContent = '');
+    ticketSet.delete(last.ticketCode);
+    tableRowsFilled[last.table]--;
+    updateFooter(last.table);
+  }
+
+  function startQRScanner() {
+    const qrDiv = document.getElementById("qr-reader");
+    qrDiv.innerHTML = "";
+    qrDiv.style.display = "block";
+    qrDiv.style.height = "360px";
+
+    if (html5QrCodeInstance) {
+      html5QrCodeInstance.stop().catch(() => {});
+      html5QrCodeInstance.clear().catch(() => {});
+    }
+
+    html5QrCodeInstance = new Html5Qrcode("qr-reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    html5QrCodeInstance.start(
+      { facingMode: "environment" },
+      config,
+      qrMessage => {
+        if (!qrMessage.includes('-')) return;
+        const parts = qrMessage.split('-');
+        if (parts.length !== 5) {
+          alert("QR format invalid");
+          return;
         }
-        column.appendChild(rowDiv);
+        fillTableFromParts(parts[2], parts[3]);
+        html5QrCodeInstance.stop().then(() => {
+          qrDiv.style.display = "none";
+        }).catch(err => {
+          console.error("Failed to stop camera", err);
+        });
+      },
+      err => {
+        // Optional: console.log("Scan error:", err);
       }
-      grid.appendChild(column);
-    }
-
-    const footer = document.createElement('div');
-    footer.className = 'footer';
-    footer.innerHTML = `
-      <span class="footer-align-left" id="lottery-type-${t}"></span>
-      <span class="footer-align-prize" id="prize-type-${t}"></span>
-      <span class="footer-right">รวม <span id="total-${t}">0</span> ชุด</span>
-    `;
-
-    const footerCenter = document.createElement('div');
-    footerCenter.className = 'footer-center';
-    footerCenter.innerHTML = `ชื่อ <span id="owner-${t}"></span>`;
-
-    prizeSelect.onchange = () => updateFooter(t);
-    lotterySelect.onchange = () => updateFooter(t);
-
-    wrapper.appendChild(grid);
-    wrapper.appendChild(prizeSelect);
-    wrapper.appendChild(lotterySelect);
-    wrapper.appendChild(footer);
-    wrapper.appendChild(footerCenter);
-    container.appendChild(wrapper);
+    ).catch(err => {
+      alert("ไม่สามารถเปิดกล้องได้: " + err);
+    });
   }
-}
 
-function updateFooter(index) {
-  const name = document.getElementById('ownerName').value;
-  document.getElementById(`owner-${index}`).textContent = name;
-  document.getElementById(`prize-type-${index}`).textContent = document.getElementById(`prize-${index}`).value;
-  document.getElementById(`lottery-type-${index}`).textContent = document.getElementById(`lottery-${index}`).value;
-  document.getElementById(`total-${index}`).textContent = tableRowsFilled[index];
-}
+  function createTables() {
+    const container = document.getElementById('tablesContainer');
+    for (let t = 0; t < 4; t++) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-wrapper';
 
-document.addEventListener('DOMContentLoaded', () => {
-  createTables();
-  document.getElementById('ownerName').addEventListener('input', () => {
-    for (let i = 0; i < 4; i++) updateFooter(i);
-  });
+      const prizeSelect = document.createElement('select');
+      prizeSelect.id = `prize-${t}`;
+      prizeSelect.classList.add('no-print');
+      prizeOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        prizeSelect.appendChild(o);
+      });
 
-  // Enable Enter key for manual input
-  document.getElementById("manualNumber").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      manualInputQR();
+      const lotterySelect = document.createElement('select');
+      lotterySelect.id = `lottery-${t}`;
+      lotterySelect.classList.add('no-print');
+      lotteryOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt; o.textContent = opt;
+        lotterySelect.appendChild(o);
+      });
+
+      const grid = document.createElement('div');
+      grid.className = 'lottery-grid';
+      for (let col = 0; col < 2; col++) {
+        const column = document.createElement('div');
+        column.className = 'lottery-column';
+        for (let row = 0; row < 10; row++) {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'lottery-row';
+          const index = col * 10 + row;
+          const rowNum = document.createElement('div');
+          rowNum.className = 'row-number';
+          rowNum.textContent = index + 1;
+          rowDiv.appendChild(rowNum);
+          for (let c = 0; c < 8; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            if (c === 1) cell.classList.add('gap-after-2');
+            cell.setAttribute('data-cell', `${t}-${index}-${c}`);
+            rowDiv.appendChild(cell);
+          }
+          column.appendChild(rowDiv);
+        }
+        grid.appendChild(column);
+      }
+
+      const footer = document.createElement('div');
+      footer.className = 'footer';
+      footer.innerHTML = `
+        <span class="footer-align-left" id="lottery-type-${t}"></span>
+        <span class="footer-align-prize" id="prize-type-${t}"></span>
+        <span class="footer-right">รวม <span id="total-${t}">0</span> ชุด</span>
+      `;
+
+      const footerCenter = document.createElement('div');
+      footerCenter.className = 'footer-center';
+      footerCenter.innerHTML = `ชื่อ <span id="owner-${t}"></span>`;
+
+      prizeSelect.onchange = () => updateFooter(t);
+      lotterySelect.onchange = () => updateFooter(t);
+
+      wrapper.appendChild(grid);
+      wrapper.appendChild(prizeSelect);
+      wrapper.appendChild(lotterySelect);
+      wrapper.appendChild(footer);
+      wrapper.appendChild(footerCenter);
+      container.appendChild(wrapper);
     }
+  }
+
+  function updateFooter(index) {
+    const name = document.getElementById('ownerName').value;
+    document.getElementById(`owner-${index}`).textContent = name;
+    document.getElementById(`prize-type-${index}`).textContent = document.getElementById(`prize-${index}`).value;
+    document.getElementById(`lottery-type-${index}`).textContent = document.getElementById(`lottery-${index}`).value;
+    document.getElementById(`total-${index}`).textContent = tableRowsFilled[index];
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    createTables();
+    document.getElementById('ownerName').addEventListener('input', () => {
+      for (let i = 0; i < 4; i++) updateFooter(i);
+    });
+
+    // Enable Enter key for manual input
+    document.getElementById("manualNumber").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        manualInputQR();
+      }
+    });
+    document.getElementById("manualSet").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        document.getElementById("manualNumber").focus();
+      }
+    });
   });
-  document.getElementById("manualSet").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      document.getElementById("manualNumber").focus();
-    }
-  });
-});
 </script>
-  
+
 </body>
 </html>
