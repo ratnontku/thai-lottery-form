@@ -122,7 +122,7 @@
   <br />
   <button onclick="startQRScanner()">เริ่มสแกน QR</button>
   <button onclick="window.print()">พิมพ์</button>
-  <div id="qr-reader" style="width: 300px; display:none; margin-top: 10px;"></div>
+  <div id="qr-reader" style="width: 300px; display: none; margin-top: 10px;"></div>
 </div>
 
 <div class="tables" id="tablesContainer"></div>
@@ -137,6 +137,8 @@ const lotteryOptions = ["รัฐบาล", "การกุศล"];
 
 let currentTableIndex = 0;
 let tableRowsFilled = [0, 0, 0, 0];
+let html5QrCode; // global instance
+let scannerRunning = false;
 
 function setActiveTable(index) {
   currentTableIndex = parseInt(index);
@@ -148,15 +150,19 @@ function setActiveTable(index) {
 function startQRScanner() {
   const qrDiv = document.getElementById("qr-reader");
   qrDiv.style.display = "block";
-  const html5QrCode = new Html5Qrcode("qr-reader");
+  qrDiv.style.height = "320px"; // required on mobile
 
-  const qrConfig = { fps: 10, qrbox: 250 };
+  if (scannerRunning) return; // prevent double start
+
+  html5QrCode = new Html5Qrcode("qr-reader");
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
   html5QrCode.start(
     { facingMode: "environment" },
-    qrConfig,
-    qrCodeMessage => {
-      const parts = qrCodeMessage.split('-');
+    config,
+    qrMessage => {
+      if (!qrMessage.includes('-')) return;
+      const parts = qrMessage.split('-');
       if (parts.length !== 5) {
         alert("QR format invalid");
         return;
@@ -182,12 +188,15 @@ function startQRScanner() {
 
       html5QrCode.stop().then(() => {
         qrDiv.style.display = "none";
+        scannerRunning = false;
       });
     },
-    errorMessage => {
-      // Optional: console.log(errorMessage);
+    err => {
+      // optional: console.log(err);
     }
-  ).catch(err => {
+  ).then(() => {
+    scannerRunning = true;
+  }).catch(err => {
     alert("Camera error: " + err);
   });
 }
