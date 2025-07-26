@@ -67,14 +67,6 @@
     .gap-after-2 {
       margin-right: 6px !important;
     }
-    .delete-btn {
-      font-size: 12px;
-      margin-left: 4px;
-      cursor: pointer;
-      color: red;
-      background: none;
-      border: none;
-    }
     .footer {
       font-size: 16px;
       margin-top: 4px;
@@ -105,7 +97,7 @@
       .no-print {
         display: none;
       }
-      select, button, input {
+      select, button {
         display: none !important;
       }
       @page {
@@ -130,15 +122,8 @@
   <br />
   <button onclick="startQRScanner()">เริ่มสแกน QR</button>
   <button onclick="window.print()">พิมพ์</button>
-
   <div id="qr-reader" style="width: 100%; max-width: 360px; height: 360px; display:none; margin-top: 10px;"></div>
 
-  <div style="margin-top:10px;">
-    <label>หรือกรอกข้อมูลด้วยตนเอง:</label>
-    <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" style="width:80px;" />
-    <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" style="width:120px;" />
-    <button onclick="manualInputQR()">เพิ่ม</button>
-  </div>
 </div>
 
 <div class="tables" id="tablesContainer"></div>
@@ -153,8 +138,8 @@ const lotteryOptions = ["รัฐบาล", "การกุศล"];
 
 let currentTableIndex = 0;
 let tableRowsFilled = [0, 0, 0, 0];
-let html5QrCodeInstance = null;
-let ticketSet = new Set();
+let html5QrCode; // global instance
+let scannerRunning = false;
 
 function setActiveTable(index) {
   currentTableIndex = parseInt(index);
@@ -163,103 +148,54 @@ function setActiveTable(index) {
   });
 }
 
-function fillTableFromParts(cc, dddddd) {
-  const ticketCode = `${cc}-${dddddd}`;
-  if (ticketSet.has(ticketCode)) {
-    alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
-    return;
-  }
-
-  const row = tableRowsFilled[currentTableIndex];
-  if (row >= 20) {
-    alert("ตารางนี้ครบแล้ว");
-    return;
-  }
-
-  const cells = [];
-  for (let i = 0; i < 2; i++) {
-    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
-    cell.textContent = cc[i] || '';
-    cells.push(cell);
-  }
-  for (let i = 0; i < 6; i++) {
-    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`);
-    cell.textContent = dddddd[i] || '';
-    cells.push(cell);
-  }
-
-  // Add delete button
-  const rowEl = cells[0].parentElement;
-  const deleteBtn = document.createElement('button');
-  deleteBtn.textContent = "❌";
-  deleteBtn.className = "delete-btn";
-  deleteBtn.onclick = () => {
-    cells.forEach(cell => cell.textContent = '');
-    rowEl.removeChild(deleteBtn);
-    ticketSet.delete(ticketCode);
-    tableRowsFilled[currentTableIndex]--;
-    updateFooter(currentTableIndex);
-  };
-  rowEl.appendChild(deleteBtn);
-
-  ticketSet.add(ticketCode);
-  tableRowsFilled[currentTableIndex]++;
-  updateFooter(currentTableIndex);
-}
-
-function manualInputQR() {
-  const cc = document.getElementById("manualSet").value.trim();
-  const dddddd = document.getElementById("manualNumber").value.trim();
-
-  if (!/^\d{2}$/.test(cc)) {
-    alert("กรุณากรอกชุดที่ให้ถูกต้อง (2 หลัก)");
-    return;
-  }
-
-  if (!/^\d{6}$/.test(dddddd)) {
-    alert("กรุณากรอกเลขสลากให้ถูกต้อง (6 หลัก)");
-    return;
-  }
-
-  fillTableFromParts(cc, dddddd);
-  document.getElementById("manualSet").value = "";
-  document.getElementById("manualNumber").value = "";
-  document.getElementById("manualSet").focus();
-}
-
 function startQRScanner() {
   const qrDiv = document.getElementById("qr-reader");
-  qrDiv.innerHTML = "";
+  qrDiv.innerHTML = ""; // Clear any previous scanner
   qrDiv.style.display = "block";
-  qrDiv.style.height = "360px";
 
-  if (html5QrCodeInstance) {
-    html5QrCodeInstance.stop().catch(() => {});
-    html5QrCodeInstance.clear().catch(() => {});
-  }
+  const html5QrCode = new Html5Qrcode("qr-reader");
 
-  html5QrCodeInstance = new Html5Qrcode("qr-reader");
   const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-  html5QrCodeInstance.start(
+  html5QrCode.start(
     { facingMode: "environment" },
     config,
-    qrMessage => {
-      if (!qrMessage.includes('-')) return;
-      const parts = qrMessage.split('-');
+    qrCodeMessage => {
+      if (!qrCodeMessage.includes('-')) return;
+
+      const parts = qrCodeMessage.split('-');
       if (parts.length !== 5) {
         alert("QR format invalid");
         return;
       }
-      fillTableFromParts(parts[2], parts[3]);
-      html5QrCodeInstance.stop().then(() => {
+
+      const cc = parts[2];
+      const dddddd = parts[3];
+      const row = tableRowsFilled[currentTableIndex];
+      if (row >= 20) {
+        alert("เต็มแล้ว");
+        html5QrCode.stop();
+        return;
+      }
+
+      for (let i = 0; i < 2; i++) {
+        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
+      }
+      for (let i = 0; i < 6; i++) {
+        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
+      }
+
+      tableRowsFilled[currentTableIndex]++;
+      updateFooter(currentTableIndex);
+
+      html5QrCode.stop().then(() => {
         qrDiv.style.display = "none";
       }).catch(err => {
         console.error("Failed to stop camera", err);
       });
     },
     err => {
-      // Optional: console.log("Scan error:", err);
+      // you may log the error: console.log("QR Scan error:", err);
     }
   ).catch(err => {
     alert("ไม่สามารถเปิดกล้องได้: " + err);
@@ -351,18 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
   createTables();
   document.getElementById('ownerName').addEventListener('input', () => {
     for (let i = 0; i < 4; i++) updateFooter(i);
-  });
-
-  // Enable Enter key for manual input
-  document.getElementById("manualNumber").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      manualInputQR();
-    }
-  });
-  document.getElementById("manualSet").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      document.getElementById("manualNumber").focus();
-    }
   });
 });
 </script>
