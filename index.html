@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thai Lottery Form</title>
+  <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'TH Sarabun New', sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    input, select, button {
+      font-size: 18px;
+      padding: 5px;
+    }
+    .tables {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .table-wrapper {
+      border: 2px solid black;
+      padding: 5px;
+      font-size: 18px;
+    }
+    .lottery-grid {
+      display: grid;
+      grid-template-columns: auto auto;
+      column-gap: 4px;
+    }
+    .lottery-column {
+      display: grid;
+      grid-template-rows: repeat(10, auto);
+      gap: 2px;
+    }
+    .lottery-row {
+      display: flex;
+      align-items: center;
+    }
+    .row-number {
+      width: 20px;
+      text-align: right;
+      margin-right: 4px;
+      font-size: 12px;
+      color: #aaa;
+    }
+    .cell {
+      border: 1px solid black;
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      margin-right: 1px;
+    }
+    .gap-after-2 {
+      margin-right: 6px !important;
+    }
+    .footer {
+      font-size: 16px;
+      margin-top: 4px;
+      padding: 2px 5px 0;
+      position: relative;
+    }
+    .footer span {
+      display: inline-block;
+    }
+    .footer-align-left {
+      margin-left: 24px;
+    }
+    .footer-align-prize {
+      margin-left: 54px;
+    }
+    .footer-right {
+      position: absolute;
+      right: 5px;
+      bottom: 0;
+    }
+    .footer-center {
+      font-size: 16px;
+      margin-top: 2px;
+      margin-left: 24px;
+      text-align: left;
+    }
+    @media print {
+      .no-print {
+        display: none;
+      }
+      select, button {
+        display: none !important;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls no-print">
+  <label>ชื่อเจ้าของ:</label>
+  <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
+  <label>เลือกตารางที่ต้องการกรอก QR:</label>
+  <select id="activeTableSelect" onchange="setActiveTable(this.value)">
+    <option value="0">ตารางที่ 1</option>
+    <option value="1">ตารางที่ 2</option>
+    <option value="2">ตารางที่ 3</option>
+    <option value="3">ตารางที่ 4</option>
+  </select>
+  <br />
+  <button onclick="simulateQRScan()">สแกน QR (จำลอง)</button>
+  <button onclick="window.print()">พิมพ์</button>
+</div>
+
+<div class="tables" id="tablesContainer"></div>
+
+<script>
+const prizeOptions = [
+  "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
+  "รางวัลที่ 5", "หน้า 3 ตัว", "ท้าย 3 ตัว", "ท้าย 2 ตัว",
+  "หน้า 3 ตัว+ท้าย 3 ตัว", "หน้า 3 ตัว+ท้าย 2 ตัว", "ท้าย 3 ตัว+ท้าย 2 ตัว"
+];
+const lotteryOptions = ["รัฐบาล", "การกุศล"];
+
+let currentTableIndex = 0;
+let tableRowsFilled = [0, 0, 0, 0];
+
+function setActiveTable(index) {
+  currentTableIndex = parseInt(index);
+  document.querySelectorAll('.table-wrapper').forEach((el, i) => {
+    el.classList.toggle('active-table', i === currentTableIndex);
+  });
+}
+
+function simulateQRScan() {
+  const dummyQR = '00-11-22-334455-66';
+  const parts = dummyQR.split('-');
+  if (parts.length !== 5) return alert('QR format invalid');
+  const cc = parts[2];
+  const dddddd = parts[3];
+  const row = tableRowsFilled[currentTableIndex];
+  if (row >= 20) return alert('เต็มแล้ว');
+  for (let i = 0; i < 2; i++) {
+    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
+  }
+  for (let i = 0; i < 6; i++) {
+    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
+  }
+  tableRowsFilled[currentTableIndex]++;
+  updateFooter(currentTableIndex);
+}
+
+function createTables() {
+  const container = document.getElementById('tablesContainer');
+  for (let t = 0; t < 4; t++) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-wrapper';
+
+    const prizeSelect = document.createElement('select');
+    prizeSelect.id = `prize-${t}`;
+    prizeSelect.classList.add('no-print');
+    prizeOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      prizeSelect.appendChild(o);
+    });
+
+    const lotterySelect = document.createElement('select');
+    lotterySelect.id = `lottery-${t}`;
+    lotterySelect.classList.add('no-print');
+    lotteryOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      lotterySelect.appendChild(o);
+    });
+
+    const grid = document.createElement('div');
+    grid.className = 'lottery-grid';
+    for (let col = 0; col < 2; col++) {
+      const column = document.createElement('div');
+      column.className = 'lottery-column';
+      for (let row = 0; row < 10; row++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'lottery-row';
+        const index = col * 10 + row;
+        const rowNum = document.createElement('div');
+        rowNum.className = 'row-number';
+        rowNum.textContent = index + 1;
+        rowDiv.appendChild(rowNum);
+        for (let c = 0; c < 8; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (c === 1) cell.classList.add('gap-after-2');
+          cell.setAttribute('data-cell', `${t}-${index}-${c}`);
+          rowDiv.appendChild(cell);
+        }
+        column.appendChild(rowDiv);
+      }
+      grid.appendChild(column);
+    }
+
+    const footer = document.createElement('div');
+    footer.className = 'footer';
+    footer.innerHTML = `
+      <span class="footer-align-left" id="lottery-type-${t}"></span>
+      <span class="footer-align-prize" id="prize-type-${t}"></span>
+      <span class="footer-right">รวม <span id="total-${t}">0</span> ชุด</span>
+    `;
+
+    const footerCenter = document.createElement('div');
+    footerCenter.className = 'footer-center';
+    footerCenter.innerHTML = `ชื่อ <span id="owner-${t}"></span>`;
+
+    prizeSelect.onchange = () => updateFooter(t);
+    lotterySelect.onchange = () => updateFooter(t);
+
+    wrapper.appendChild(grid);
+    wrapper.appendChild(prizeSelect);
+    wrapper.appendChild(lotterySelect);
+    wrapper.appendChild(footer);
+    wrapper.appendChild(footerCenter);
+    container.appendChild(wrapper);
+  }
+}
+
+function updateFooter(index) {
+  const name = document.getElementById('ownerName').value;
+  document.getElementById(`owner-${index}`).textContent = name;
+  document.getElementById(`prize-type-${index}`).textContent = document.getElementById(`prize-${index}`).value;
+  document.getElementById(`lottery-type-${index}`).textContent = document.getElementById(`lottery-${index}`).value;
+  document.getElementById(`total-${index}`).textContent = tableRowsFilled[index];
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  createTables();
+  document.getElementById('ownerName').addEventListener('input', () => {
+    for (let i = 0; i < 4; i++) updateFooter(i);
+  });
+});
+</script>
+
+</body>
+</html>
