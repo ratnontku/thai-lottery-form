@@ -10,30 +10,23 @@
     body {
       font-family: 'TH Sarabun New', sans-serif;
       margin: 0;
-      padding: 10px;
-      background: #f9f9f9;
+      padding: 16px;
+      background-color: #f7f7f7;
     }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     label {
-      display: block;
-      margin-top: 10px;
-      font-size: 20px;
+      font-size: 18px;
     }
     input, select, button {
-      width: 100%;
-      font-size: 20px;
-      margin-top: 5px;
+      font-size: 18px;
       padding: 10px;
-      border-radius: 6px;
       border: 1px solid #ccc;
-      box-sizing: border-box;
+      border-radius: 6px;
     }
     button {
       background-color: #007bff;
@@ -44,30 +37,76 @@
     button:hover {
       background-color: #0056b3;
     }
-    .row {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .row > * {
-      flex: 1;
-    }
-    #qr-reader {
-      display: none;
-      margin-top: 10px;
-      width: 100%;
-      height: 320px;
-    }
     .tables {
-      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .print-footer {
+    .table-wrapper {
+      background: white;
+      border: 2px solid #ccc;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .lottery-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .lottery-column {
+      display: grid;
+      grid-template-rows: repeat(10, auto);
+      gap: 4px;
+    }
+    .lottery-row {
+      display: flex;
+      align-items: center;
+    }
+    .row-number {
+      width: 20px;
+      text-align: right;
+      margin-right: 4px;
+      font-size: 14px;
+      color: #888;
+    }
+    .cell {
+      border: 1px solid black;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      margin-right: 2px;
+      background-color: #fff;
+    }
+    .gap-after-2 {
+      margin-right: 8px !important;
+    }
+    .footer {
+      font-size: 16px;
+      margin-top: 8px;
+      padding: 5px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .footer-center {
+      margin-top: 4px;
+    }
+    .qr-section {
+      max-width: 400px;
+      margin: 10px auto;
+    }
+    .bottom-controls {
       text-align: center;
-      margin-top: 30px;
+      margin-top: 20px;
     }
     @media print {
       .no-print {
-        display: none !important;
+        display: none;
       }
       @page {
         size: A4 landscape;
@@ -77,30 +116,37 @@
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="no-print">
+  <div class="controls no-print">
     <label>ชื่อเจ้าของ:</label>
     <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
 
-    <button onclick="startQRScanner()">เริ่มสแกน QR</button>
-    <div id="qr-reader"></div>
+    <label>เลือกตารางที่ต้องการกรอก QR:</label>
+    <select id="activeTableSelect">
+      <option value="0">ตารางที่ 1</option>
+      <option value="1">ตารางที่ 2</option>
+      <option value="2">ตารางที่ 3</option>
+      <option value="3">ตารางที่ 4</option>
+    </select>
 
-    <label style="margin-top:15px;">หรือกรอกข้อมูลด้วยตนเอง:</label>
-    <div class="row">
-      <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" />
-      <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" />
+    <div class="qr-section">
+      <button onclick="startQRScanner()">เริ่มสแกน QR</button>
+      <div id="qr-reader" style="width: 100%; max-width: 360px; height: 360px; display:none; margin-top: 10px;"></div>
     </div>
-    <button onclick="manualInputQR()" style="margin-top: 10px;">เพิ่ม</button>
+
+    <div>
+      <label>กรอกข้อมูลด้วยตนเอง:</label>
+      <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" style="width:80px;" />
+      <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" style="width:120px;" />
+      <button onclick="manualInputQR()">เพิ่ม</button>
+    </div>
   </div>
 
-  <div class="tables" id="tablesContainer">
-    <!-- dynamically created tables -->
-  </div>
+  <div class="tables" id="tablesContainer"></div>
 
-  <div class="print-footer no-print">
+  <div class="bottom-controls no-print">
     <button onclick="window.print()">พิมพ์</button>
   </div>
-</div>
+
 <script>
 const prizeOptions = [
   "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
@@ -324,5 +370,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+  
 </body>
 </html>
