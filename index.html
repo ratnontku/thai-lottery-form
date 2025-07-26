@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Thai Lottery Form</title>
   <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: 'TH Sarabun New', sans-serif;
@@ -119,8 +120,9 @@
     <option value="3">ตารางที่ 4</option>
   </select>
   <br />
-  <button onclick="simulateQRScan()">สแกน QR (จำลอง)</button>
+  <button onclick="startQRScanner()">เริ่มสแกน QR</button>
   <button onclick="window.print()">พิมพ์</button>
+  <div id="qr-reader" style="width: 300px; display:none; margin-top: 10px;"></div>
 </div>
 
 <div class="tables" id="tablesContainer"></div>
@@ -143,22 +145,51 @@ function setActiveTable(index) {
   });
 }
 
-function simulateQRScan() {
-  const dummyQR = '00-11-22-334455-66';
-  const parts = dummyQR.split('-');
-  if (parts.length !== 5) return alert('QR format invalid');
-  const cc = parts[2];
-  const dddddd = parts[3];
-  const row = tableRowsFilled[currentTableIndex];
-  if (row >= 20) return alert('เต็มแล้ว');
-  for (let i = 0; i < 2; i++) {
-    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
-  }
-  for (let i = 0; i < 6; i++) {
-    document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
-  }
-  tableRowsFilled[currentTableIndex]++;
-  updateFooter(currentTableIndex);
+function startQRScanner() {
+  const qrDiv = document.getElementById("qr-reader");
+  qrDiv.style.display = "block";
+  const html5QrCode = new Html5Qrcode("qr-reader");
+
+  const qrConfig = { fps: 10, qrbox: 250 };
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    qrConfig,
+    qrCodeMessage => {
+      const parts = qrCodeMessage.split('-');
+      if (parts.length !== 5) {
+        alert("QR format invalid");
+        return;
+      }
+
+      const cc = parts[2];
+      const dddddd = parts[3];
+      const row = tableRowsFilled[currentTableIndex];
+      if (row >= 20) {
+        alert("เต็มแล้ว");
+        return;
+      }
+
+      for (let i = 0; i < 2; i++) {
+        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
+      }
+      for (let i = 0; i < 6; i++) {
+        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
+      }
+
+      tableRowsFilled[currentTableIndex]++;
+      updateFooter(currentTableIndex);
+
+      html5QrCode.stop().then(() => {
+        qrDiv.style.display = "none";
+      });
+    },
+    errorMessage => {
+      // Optional: console.log(errorMessage);
+    }
+  ).catch(err => {
+    alert("Camera error: " + err);
+  });
 }
 
 function createTables() {
