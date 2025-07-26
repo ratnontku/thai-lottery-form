@@ -2,47 +2,43 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Thai Lottery Form</title>
-  <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: 'TH Sarabun New', sans-serif;
       margin: 0;
-      padding: 1rem;
-      background-color: #f8f8f8;
+      padding: 10px;
+      background: #f9f9f9;
     }
     .container {
-      max-width: 720px;
-      margin: 0 auto;
-      background: white;
-      padding: 1rem;
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    h2 {
-      margin-top: 0;
-      font-size: 1.5rem;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     label {
-      font-size: 1rem;
       display: block;
-      margin: 0.5rem 0 0.25rem;
+      margin-top: 10px;
+      font-size: 20px;
     }
     input, select, button {
-      font-size: 1rem;
-      padding: 0.5rem;
+      width: 100%;
+      font-size: 20px;
+      margin-top: 5px;
+      padding: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      width: 100%;
       box-sizing: border-box;
     }
     button {
       background-color: #007bff;
       color: white;
       border: none;
-      margin-top: 0.5rem;
       cursor: pointer;
     }
     button:hover {
@@ -50,64 +46,58 @@
     }
     .row {
       display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
     }
-    .row input, .row select {
+    .row > * {
       flex: 1;
-    }
-    .table-container {
-      margin-top: 1rem;
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 0.5rem;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      text-align: center;
-      padding: 0.25rem;
-      font-size: 1rem;
-    }
-    .footer-controls {
-      text-align: center;
-      margin-top: 2rem;
     }
     #qr-reader {
       display: none;
-      width: 100%;
-      max-width: 360px;
-      height: 360px;
       margin-top: 10px;
+      width: 100%;
+      height: 320px;
     }
-    @media (max-width: 480px) {
-      h2 { font-size: 1.25rem; }
-      label, input, select, button { font-size: 1rem; }
+    .tables {
+      margin-top: 20px;
+    }
+    .print-footer {
+      text-align: center;
+      margin-top: 30px;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      @page {
+        size: A4 landscape;
+        margin: 10mm;
+      }
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <h2>ฟอร์มกรอกสลากกินแบ่ง</h2>
-  <label for="ownerName">ชื่อเจ้าของ:</label>
-  <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
+  <div class="no-print">
+    <label>ชื่อเจ้าของ:</label>
+    <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
 
-  <button onclick="startQRScanner()">เริ่มสแกน QR</button>
+    <button onclick="startQRScanner()">เริ่มสแกน QR</button>
+    <div id="qr-reader"></div>
 
-  <div id="qr-reader"></div>
-
-  <label style="margin-top:1rem;">หรือกรอกข้อมูลด้วยตนเอง:</label>
-  <div class="row">
-    <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" />
-    <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" />
-    <button onclick="manualInputQR()">เพิ่ม</button>
+    <label style="margin-top:15px;">หรือกรอกข้อมูลด้วยตนเอง:</label>
+    <div class="row">
+      <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" />
+      <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" />
+    </div>
+    <button onclick="manualInputQR()" style="margin-top: 10px;">เพิ่ม</button>
   </div>
 
-  <div class="table-container" id="tablesContainer"></div>
+  <div class="tables" id="tablesContainer">
+    <!-- dynamically created tables -->
+  </div>
 
-  <div class="footer-controls">
+  <div class="print-footer no-print">
     <button onclick="window.print()">พิมพ์</button>
   </div>
 </div>
