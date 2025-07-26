@@ -2,132 +2,115 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Thai Lottery Form</title>
-  <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=TH+Sarabun+New&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: 'TH Sarabun New', sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 1rem;
+      background-color: #f8f8f8;
     }
-    .controls {
-      margin-bottom: 20px;
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
     }
     label {
+      font-size: 1rem;
       display: block;
-      margin-top: 10px;
-      font-size: 18px;
+      margin: 0.5rem 0 0.25rem;
     }
     input, select, button {
-      font-size: 18px;
-      padding: 5px;
+      font-size: 1rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
     }
-    .tables {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      margin-top: 0.5rem;
+      cursor: pointer;
     }
-    .table-wrapper {
-      border: 2px solid black;
-      padding: 5px;
-      font-size: 18px;
+    button:hover {
+      background-color: #0056b3;
     }
-    .lottery-grid {
-      display: grid;
-      grid-template-columns: auto auto;
-      column-gap: 4px;
-    }
-    .lottery-column {
-      display: grid;
-      grid-template-rows: repeat(10, auto);
-      gap: 2px;
-    }
-    .lottery-row {
+    .row {
       display: flex;
-      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
-    .row-number {
-      width: 20px;
-      text-align: right;
-      margin-right: 4px;
-      font-size: 12px;
-      color: #aaa;
+    .row input, .row select {
+      flex: 1;
     }
-    .cell {
-      border: 1px solid black;
-      width: 18px;
-      height: 18px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 16px;
-      margin-right: 1px;
+    .table-container {
+      margin-top: 1rem;
+      overflow-x: auto;
     }
-    .gap-after-2 {
-      margin-right: 6px !important;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
     }
-    .footer {
-      font-size: 16px;
-      margin-top: 4px;
-      padding: 2px 5px 0;
-      position: relative;
+    th, td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 0.25rem;
+      font-size: 1rem;
     }
-    .footer span {
-      display: inline-block;
+    .footer-controls {
+      text-align: center;
+      margin-top: 2rem;
     }
-    .footer-align-left {
-      margin-left: 24px;
+    #qr-reader {
+      display: none;
+      width: 100%;
+      max-width: 360px;
+      height: 360px;
+      margin-top: 10px;
     }
-    .footer-align-prize {
-      margin-left: 54px;
-    }
-    .footer-right {
-      position: absolute;
-      right: 5px;
-      bottom: 0;
-    }
-    .footer-center {
-      font-size: 16px;
-      margin-top: 2px;
-      margin-left: 24px;
-      text-align: left;
-    }
-    @media print {
-      .no-print {
-        display: none;
-      }
-      select, button {
-        display: none !important;
-      }
-      @page {
-        size: A4 landscape;
-        margin: 10mm;
-      }
+    @media (max-width: 480px) {
+      h2 { font-size: 1.25rem; }
+      label, input, select, button { font-size: 1rem; }
     }
   </style>
 </head>
 <body>
-
-<div class="controls no-print">
-  <label>ชื่อเจ้าของ:</label>
+<div class="container">
+  <h2>ฟอร์มกรอกสลากกินแบ่ง</h2>
+  <label for="ownerName">ชื่อเจ้าของ:</label>
   <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
-  <label>เลือกตารางที่ต้องการกรอก QR:</label>
-  <select id="activeTableSelect" onchange="setActiveTable(this.value)">
-    <option value="0">ตารางที่ 1</option>
-    <option value="1">ตารางที่ 2</option>
-    <option value="2">ตารางที่ 3</option>
-    <option value="3">ตารางที่ 4</option>
-  </select>
-  <br />
+
   <button onclick="startQRScanner()">เริ่มสแกน QR</button>
-  <button onclick="window.print()">พิมพ์</button>
-  <div id="qr-reader" style="width: 100%; max-width: 360px; height: 360px; display:none; margin-top: 10px;"></div>
 
+  <div id="qr-reader"></div>
+
+  <label style="margin-top:1rem;">หรือกรอกข้อมูลด้วยตนเอง:</label>
+  <div class="row">
+    <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" />
+    <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" />
+    <button onclick="manualInputQR()">เพิ่ม</button>
+  </div>
+
+  <div class="table-container" id="tablesContainer"></div>
+
+  <div class="footer-controls">
+    <button onclick="window.print()">พิมพ์</button>
+  </div>
 </div>
-
-<div class="tables" id="tablesContainer"></div>
-
 <script>
 const prizeOptions = [
   "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
@@ -138,8 +121,8 @@ const lotteryOptions = ["รัฐบาล", "การกุศล"];
 
 let currentTableIndex = 0;
 let tableRowsFilled = [0, 0, 0, 0];
-let html5QrCode; // global instance
-let scannerRunning = false;
+let html5QrCodeInstance = null;
+let ticketSet = new Set();
 
 function setActiveTable(index) {
   currentTableIndex = parseInt(index);
@@ -148,54 +131,103 @@ function setActiveTable(index) {
   });
 }
 
+function fillTableFromParts(cc, dddddd) {
+  const ticketCode = `${cc}-${dddddd}`;
+  if (ticketSet.has(ticketCode)) {
+    alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
+    return;
+  }
+
+  const row = tableRowsFilled[currentTableIndex];
+  if (row >= 20) {
+    alert("ตารางนี้ครบแล้ว");
+    return;
+  }
+
+  const cells = [];
+  for (let i = 0; i < 2; i++) {
+    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
+    cell.textContent = cc[i] || '';
+    cells.push(cell);
+  }
+  for (let i = 0; i < 6; i++) {
+    const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`);
+    cell.textContent = dddddd[i] || '';
+    cells.push(cell);
+  }
+
+  // Add delete button
+  const rowEl = cells[0].parentElement;
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = "❌";
+  deleteBtn.className = "delete-btn";
+  deleteBtn.onclick = () => {
+    cells.forEach(cell => cell.textContent = '');
+    rowEl.removeChild(deleteBtn);
+    ticketSet.delete(ticketCode);
+    tableRowsFilled[currentTableIndex]--;
+    updateFooter(currentTableIndex);
+  };
+  rowEl.appendChild(deleteBtn);
+
+  ticketSet.add(ticketCode);
+  tableRowsFilled[currentTableIndex]++;
+  updateFooter(currentTableIndex);
+}
+
+function manualInputQR() {
+  const cc = document.getElementById("manualSet").value.trim();
+  const dddddd = document.getElementById("manualNumber").value.trim();
+
+  if (!/^\d{2}$/.test(cc)) {
+    alert("กรุณากรอกชุดที่ให้ถูกต้อง (2 หลัก)");
+    return;
+  }
+
+  if (!/^\d{6}$/.test(dddddd)) {
+    alert("กรุณากรอกเลขสลากให้ถูกต้อง (6 หลัก)");
+    return;
+  }
+
+  fillTableFromParts(cc, dddddd);
+  document.getElementById("manualSet").value = "";
+  document.getElementById("manualNumber").value = "";
+  document.getElementById("manualSet").focus();
+}
+
 function startQRScanner() {
   const qrDiv = document.getElementById("qr-reader");
-  qrDiv.innerHTML = ""; // Clear any previous scanner
+  qrDiv.innerHTML = "";
   qrDiv.style.display = "block";
+  qrDiv.style.height = "360px";
 
-  const html5QrCode = new Html5Qrcode("qr-reader");
+  if (html5QrCodeInstance) {
+    html5QrCodeInstance.stop().catch(() => {});
+    html5QrCodeInstance.clear().catch(() => {});
+  }
 
+  html5QrCodeInstance = new Html5Qrcode("qr-reader");
   const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-  html5QrCode.start(
+  html5QrCodeInstance.start(
     { facingMode: "environment" },
     config,
-    qrCodeMessage => {
-      if (!qrCodeMessage.includes('-')) return;
-
-      const parts = qrCodeMessage.split('-');
+    qrMessage => {
+      if (!qrMessage.includes('-')) return;
+      const parts = qrMessage.split('-');
       if (parts.length !== 5) {
         alert("QR format invalid");
         return;
       }
-
-      const cc = parts[2];
-      const dddddd = parts[3];
-      const row = tableRowsFilled[currentTableIndex];
-      if (row >= 20) {
-        alert("เต็มแล้ว");
-        html5QrCode.stop();
-        return;
-      }
-
-      for (let i = 0; i < 2; i++) {
-        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`).textContent = cc[i] || '';
-      }
-      for (let i = 0; i < 6; i++) {
-        document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i+2}"]`).textContent = dddddd[i] || '';
-      }
-
-      tableRowsFilled[currentTableIndex]++;
-      updateFooter(currentTableIndex);
-
-      html5QrCode.stop().then(() => {
+      fillTableFromParts(parts[2], parts[3]);
+      html5QrCodeInstance.stop().then(() => {
         qrDiv.style.display = "none";
       }).catch(err => {
         console.error("Failed to stop camera", err);
       });
     },
     err => {
-      // you may log the error: console.log("QR Scan error:", err);
+      // Optional: console.log("Scan error:", err);
     }
   ).catch(err => {
     alert("ไม่สามารถเปิดกล้องได้: " + err);
@@ -288,8 +320,19 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ownerName').addEventListener('input', () => {
     for (let i = 0; i < 4; i++) updateFooter(i);
   });
+
+  // Enable Enter key for manual input
+  document.getElementById("manualNumber").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      manualInputQR();
+    }
+  });
+  document.getElementById("manualSet").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      document.getElementById("manualNumber").focus();
+    }
+  });
 });
 </script>
-
 </body>
 </html>
