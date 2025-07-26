@@ -126,8 +126,9 @@
   <div id="qr-reader" style="width: 100%; max-width: 360px; height: 360px; display:none; margin-top: 10px;"></div>
 
   <div style="margin-top:10px;">
-    <label>หรือกรอกหมายเลข QR เอง:</label>
-    <input type="text" id="manualQRInput" placeholder="รูปแบบ: aa-bb-cc-dddddd-eeee" />
+    <label>หรือกรอกข้อมูลด้วยตนเอง:</label>
+    <input type="text" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" style="width:80px;" />
+    <input type="text" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" style="width:120px;" />
     <button onclick="manualInputQR()">เพิ่ม</button>
   </div>
 </div>
@@ -170,18 +171,23 @@ function fillTableFromParts(cc, dddddd) {
 }
 
 function manualInputQR() {
-  const input = document.getElementById("manualQRInput").value.trim();
-  if (!input || !input.includes('-')) {
-    alert("กรุณากรอกหมายเลขในรูปแบบที่ถูกต้อง (aa-bb-cc-dddddd-eeee)");
+  const cc = document.getElementById("manualSet").value.trim();
+  const dddddd = document.getElementById("manualNumber").value.trim();
+
+  if (!/^\d{2}$/.test(cc)) {
+    alert("กรุณากรอกชุดที่ให้ถูกต้อง (2 หลัก)");
     return;
   }
-  const parts = input.split('-');
-  if (parts.length !== 5) {
-    alert("รูปแบบ QR ไม่ถูกต้อง");
+
+  if (!/^\d{6}$/.test(dddddd)) {
+    alert("กรุณากรอกเลขสลากให้ถูกต้อง (6 หลัก)");
     return;
   }
-  fillTableFromParts(parts[2], parts[3]);
-  document.getElementById("manualQRInput").value = "";
+
+  fillTableFromParts(cc, dddddd);
+
+  document.getElementById("manualSet").value = "";
+  document.getElementById("manualNumber").value = "";
 }
 
 function startQRScanner() {
@@ -216,7 +222,7 @@ function startQRScanner() {
       });
     },
     err => {
-      // optional: console.log("Scan error:", err);
+      // Optional: console.log("Scan error:", err);
     }
   ).catch(err => {
     alert("ไม่สามารถเปิดกล้องได้: " + err);
