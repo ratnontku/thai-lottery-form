@@ -148,22 +148,29 @@ function setActiveTable(index) {
   });
 }
 
+let html5QrCodeInstance = null;
+
 function startQRScanner() {
   const qrDiv = document.getElementById("qr-reader");
-  qrDiv.innerHTML = ""; // Clear any previous scanner
+  qrDiv.innerHTML = ""; // Clean up old scanner instance
   qrDiv.style.display = "block";
+  qrDiv.style.height = "360px"; // Ensure visible on mobile
 
-  const html5QrCode = new Html5Qrcode("qr-reader");
+  // Stop existing scanner if any
+  if (html5QrCodeInstance) {
+    html5QrCodeInstance.stop().catch(() => {});
+    html5QrCodeInstance.clear().catch(() => {});
+  }
 
+  html5QrCodeInstance = new Html5Qrcode("qr-reader");
   const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-  html5QrCode.start(
+  html5QrCodeInstance.start(
     { facingMode: "environment" },
     config,
-    qrCodeMessage => {
-      if (!qrCodeMessage.includes('-')) return;
-
-      const parts = qrCodeMessage.split('-');
+    qrMessage => {
+      if (!qrMessage.includes('-')) return;
+      const parts = qrMessage.split('-');
       if (parts.length !== 5) {
         alert("QR format invalid");
         return;
@@ -174,7 +181,6 @@ function startQRScanner() {
       const row = tableRowsFilled[currentTableIndex];
       if (row >= 20) {
         alert("เต็มแล้ว");
-        html5QrCode.stop();
         return;
       }
 
@@ -188,14 +194,14 @@ function startQRScanner() {
       tableRowsFilled[currentTableIndex]++;
       updateFooter(currentTableIndex);
 
-      html5QrCode.stop().then(() => {
+      html5QrCodeInstance.stop().then(() => {
         qrDiv.style.display = "none";
       }).catch(err => {
         console.error("Failed to stop camera", err);
       });
     },
     err => {
-      // you may log the error: console.log("QR Scan error:", err);
+      // Optional: console.log("Scanning error", err);
     }
   ).catch(err => {
     alert("ไม่สามารถเปิดกล้องได้: " + err);
