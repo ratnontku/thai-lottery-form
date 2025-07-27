@@ -122,7 +122,8 @@
     <input type="text" id="ownerName" placeholder="เช่น รัชนนท์ พงษ์สิทธิถาวร" />
 
     <label>เลือกตารางที่ต้องการกรอก QR:</label>
-    <select id="activeTableSelect">
+    <select id="activeTableSelect"
+onchange="setActiveTable(this.value)">
       <option value="0">ตารางที่ 1</option>
       <option value="1">ตารางที่ 2</option>
       <option value="2">ตารางที่ 3</option>
