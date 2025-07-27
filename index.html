@@ -40,7 +40,7 @@
     .tables {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 0;
       margin-bottom: 20px;
     }
     .table-wrapper {
@@ -67,17 +67,17 @@
       width: 20px;
       text-align: right;
       margin-right: 4px;
-      font-size: 14px;
+      font-size: 12px;
       color: #888;
     }
     .cell {
       border: 1px solid black;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      font-size: 16px;
+      font-size: 14px;
       margin-right: 2px;
       background-color: #fff;
     }
@@ -85,7 +85,7 @@
       margin-right: 8px !important;
     }
     .footer {
-      font-size: 16px;
+      font-size: 14px;
       margin-top: 8px;
       padding: 5px;
       border-top: 1px solid #ddd;
@@ -95,6 +95,7 @@
     }
     .footer-center {
       margin-top: 4px;
+	  font-size: 14px;
     }
     .qr-section {
       max-width: 400px;
@@ -148,7 +149,7 @@
     <button onclick="window.print()">พิมพ์</button>
   </div>
 
-  <script>
+    <script>
   const prizeOptions = [
     "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4",
     "รางวัลที่ 5", "หน้า 3 ตัว", "ท้าย 3 ตัว", "ท้าย 2 ตัว",
