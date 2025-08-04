@@ -156,14 +156,16 @@
       <option value="4">ตารางที่ 5</option>
       <option value="5">ตารางที่ 6</option>
     </select>
+	<!--
     <div class="qr-section">
       <button onclick="startQRScanner()">เริ่มสแกน QR</button>
       <div id="qr-reader" style="width: 100%; max-width: 360px; height: 360px; display:none; margin-top: 10px;"></div>
     </div>
+	-->
     <div>
-      <label>กรอกข้อมูลด้วยตนเอง:</label>
-      <input type="tel" id="manualSet" placeholder="ชุดที่ (2 หลัก)" maxlength="2" style="width:80px;" />
-      <input type="tel" id="manualNumber" placeholder="เลขสลาก (6 หลัก)" maxlength="6" style="width:120px;" />
+      <label>กรอกเลข:</label>
+      <input type="tel" id="manualSet" placeholder="ชุดที่" maxlength="2" style="width:40px;" />
+      <input type="tel" id="manualNumber" placeholder="เลขสลาก" maxlength="6" style="width:120px;" />
       <button onclick="manualInputQR()">เพิ่ม</button>
       <button onclick="undoLastEntry()">ย้อนกลับ</button>
     </div>
@@ -357,4 +359,3 @@
   </script>
 </body>
 </html>
-
