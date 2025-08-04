@@ -86,24 +86,35 @@
       margin-right: 10px !important;
     }
     .footer {
-      font-size: 18px;
+      font-size: 16px;
       margin-top: 8px;
       padding: 5px;
       display: flex;
       justify-content: space-between;
       flex-wrap: wrap;
+      align-items: center;
     }
-	.footer-align-left {
-      margin-left: 20px; /* added margin-left for lottery type */
-      margin-right: 5px;
+    .footer-align-left {
+      margin-left: 20px;
+      margin-right: 0px;
+      white-space: nowrap;
     }
     .footer-align-prize {
-      margin-left: -145px; /* adjust closer to lottery type*/
+      margin-left: -80px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .footer-right {
+      white-space: nowrap;
+      min-width: 100px;
+      text-align: right;
     }
     .footer-center {
       margin-top: 4px;
       margin-left: 24px;
-      font-size: 18px;
+      font-size: 16px;
     }
     .qr-section {
       max-width: 400px;
@@ -117,9 +128,17 @@
       .no-print {
         display: none;
       }
+      .table-wrapper {
+        display: block !important;
+      }
+      .footer-right {
+        display: inline !important;
+        visibility: visible !important;
+      }
       @page {
         size: A4 portrait;
-        margin-left: 20px;
+        margin-left: 15px;
+		margin-right: 20px;
       }
     }
   </style>
@@ -149,13 +168,10 @@
       <button onclick="undoLastEntry()">ย้อนกลับ</button>
     </div>
   </div>
-
   <div class="tables" id="tablesContainer"></div>
-
   <div class="bottom-controls no-print">
     <button onclick="window.print()">พิมพ์</button>
   </div>
-
   <script>
     const prizeOptions = ["None", "ข้างเคียงรางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4", "รางวัลที่ 5", "หน้า 3 ตัว", "ท้าย 3 ตัว", "ท้าย 2 ตัว", "หน้า 3 ตัว+ท้าย 3 ตัว", "หน้า 3 ตัว+ท้าย 2 ตัว", "ท้าย 3 ตัว+ท้าย 2 ตัว"];
     const lotteryOptions = ["None", "รัฐบาล", "การกุศล"];
@@ -168,21 +184,15 @@
     function setActiveTable(index) {
       currentTableIndex = parseInt(index);
       document.querySelectorAll('.table-wrapper').forEach((el, i) => {
-        el.classList.toggle('active-table', i === currentTableIndex);
+        el.style.display = i === currentTableIndex ? 'block' : 'none';
       });
     }
 
     function fillTableFromParts(cc, dddddd) {
       const ticketCode = `${cc}-${dddddd}`;
-      if (ticketSet.has(ticketCode)) {
-        alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`);
-        return;
-      }
+      if (ticketSet.has(ticketCode)) { alert(`หมายเลขนี้ถูกกรอกไปแล้ว: ${ticketCode}`); return; }
       const row = tableRowsFilled[currentTableIndex];
-      if (row >= 20) {
-        alert("ตารางนี้ครบแล้ว");
-        return;
-      }
+      if (row >= 20) { alert("ตารางนี้ครบแล้ว"); return; }
       const cells = [];
       for (let i = 0; i < 2; i++) {
         const cell = document.querySelector(`[data-cell="${currentTableIndex}-${row}-${i}"]`);
@@ -246,26 +256,26 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'table-wrapper';
 
-        const prizeSelect = document.createElement('select');
-        prizeSelect.id = `prize-${t}`;
-        prizeSelect.classList.add('no-print');
-        prizeOptions.forEach((opt, idx) => {
-          const o = document.createElement('option');
-          o.value = opt === "None" ? "" : opt;
-          o.textContent = opt === "None" ? "None" : opt;
-          if (idx === 0) o.selected = true;
-          prizeSelect.appendChild(o);
-        });
-
         const lotterySelect = document.createElement('select');
         lotterySelect.id = `lottery-${t}`;
         lotterySelect.classList.add('no-print');
         lotteryOptions.forEach((opt, idx) => {
           const o = document.createElement('option');
           o.value = opt === "None" ? "" : opt;
-          o.textContent = opt === "None" ? "None" : opt;
+          o.textContent = opt;
           if (idx === 0) o.selected = true;
           lotterySelect.appendChild(o);
+        });
+
+        const prizeSelect = document.createElement('select');
+        prizeSelect.id = `prize-${t}`;
+        prizeSelect.classList.add('no-print');
+        prizeOptions.forEach((opt, idx) => {
+          const o = document.createElement('option');
+          o.value = opt === "None" ? "" : opt;
+          o.textContent = opt;
+          if (idx === 0) o.selected = true;
+          prizeSelect.appendChild(o);
         });
 
         const grid = document.createElement('div');
@@ -305,10 +315,11 @@
         lotterySelect.onchange = () => updateFooter(t);
 
         wrapper.appendChild(grid);
-        wrapper.appendChild(prizeSelect);
         wrapper.appendChild(lotterySelect);
+        wrapper.appendChild(prizeSelect);
         wrapper.appendChild(footer);
         wrapper.appendChild(footerCenter);
+        wrapper.style.display = t === 0 ? 'block' : 'none';
         container.appendChild(wrapper);
       }
     }
@@ -319,14 +330,29 @@
       document.getElementById(`prize-type-${index}`).textContent = document.getElementById(`prize-${index}`).value;
       document.getElementById(`lottery-type-${index}`).textContent = document.getElementById(`lottery-${index}`).value;
       const total = tableRowsFilled[index];
-      document.getElementById(`footer-total-${index}`).textContent = total > 0 ? `รวม ${total} ชุด` : "";
+      const footerElement = document.getElementById(`footer-total-${index}`);
+      if (total === 0) {
+        footerElement.innerHTML = `รวม <span style="display:inline-block; width:20px;"></span> ชุด`;
+      } else {
+        footerElement.textContent = `รวม ${total} ชุด`;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       createTables();
-      document.getElementById('ownerName').addEventListener('input', () => { for (let i = 0; i < 6; i++) updateFooter(i); });
-      document.getElementById("manualNumber").addEventListener("keydown", e => { if (e.key === "Enter") manualInputQR(); });
-      document.getElementById("manualSet").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("manualNumber").focus(); });
+      // Always update footer once at load to ensure totals show even without name
+      for (let i = 0; i < 6; i++) updateFooter(i);
+
+      document.getElementById('ownerName').addEventListener('input', () => {
+        for (let i = 0; i < 6; i++) updateFooter(i);
+      });
+
+      document.getElementById("manualNumber").addEventListener("keydown", e => {
+        if (e.key === "Enter") manualInputQR();
+      });
+      document.getElementById("manualSet").addEventListener("keydown", e => {
+        if (e.key === "Enter") document.getElementById("manualNumber").focus();
+      });
     });
   </script>
 </body>
